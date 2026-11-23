@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  AnimatePresence, LayoutGroup, MotionConfig, motion,
-  useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform,
-} from "framer-motion";
-import { categories, featured, log, projects, tools } from "./data.js";
+  AnimatePresence, LayoutGroup, MotionConfig, animate, motion,
+  useAnimationFrame, useMotionValue, useMotionValueEvent, useReducedMotion,
+  useScroll, useSpring, useTransform, useVelocity,
+} from "motion/react";
+import { categories, featured, log, projects, snaps, tools } from "./data.js";
 import { redact, scan } from "./scan.js";
 
 const EASE = [0.2, 0.7, 0.1, 1];
+const CURTAIN = [0.76, 0, 0.24, 1];
 const NAV = [["work", "work"], ["projects", "projects"], ["playground", "try it"], ["about", "about"], ["contact", "contact"]];
 
 /* ── small helpers ─────────────────────────────────────────── */
@@ -26,8 +28,20 @@ function Reveal({ children, delay = 0, as = "div", className, y = 22 }) {
   );
 }
 
+/* a section label that looks jotted in the margin */
 function Label({ n, children }) {
-  return <Reveal as="p" className="label">{n} <span>/ {children}</span></Reveal>;
+  return (
+    <Reveal as="p" className="label">
+      <span className="label-n">{n}</span>
+      <span className="label-t">{children}
+        <svg viewBox="0 0 120 10" preserveAspectRatio="none" aria-hidden="true">
+          <motion.path d="M2 6 C 20 2, 35 9, 55 5 S 95 2, 118 6"
+            initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: "easeInOut", delay: 0.25 }} />
+        </svg>
+      </span>
+    </Reveal>
+  );
 }
 
 function useFinePointer() {
@@ -41,6 +55,86 @@ function useFinePointer() {
   return fine;
 }
 
+const wrap = (min, max, v) => { const r = max - min; return ((((v - min) % r) + r) % r) + min; };
+
+/* a taped-down photo; `term` renders real terminal lines instead of an image */
+function Polaroid({ img, term, note, className = "" }) {
+  return (
+    <figure className={`polaroid ${className}`}>
+      <span className="tape" aria-hidden="true" />
+      <div className="polaroid-pic">
+        {img ? <img src={img} alt="" loading="lazy" draggable="false" /> : <pre>{term.join("\n")}</pre>}
+      </div>
+      <figcaption>{note}</figcaption>
+    </figure>
+  );
+}
+
+/* ── loading screen ────────────────────────────────────────── */
+
+const LOADING = ["sharpening pencils", "making chai", "breaking things on purpose", "okay, ready"];
+
+function Loader({ onDone }) {
+  const reduce = useReducedMotion();
+  const [n, setN] = useState(0);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.overflow = "hidden";
+    const run = animate(0, 100, {
+      duration: reduce ? 0.35 : 2.2,
+      ease: [0.6, 0, 0.3, 1],
+      onUpdate: v => setN(Math.round(v)),
+      onComplete: () => setTimeout(() => { root.style.overflow = ""; onDone(); }, reduce ? 0 : 380),
+    });
+    return () => { run.stop(); root.style.overflow = ""; };
+  }, [reduce, onDone]);
+
+  const line = LOADING[Math.min(LOADING.length - 1, Math.floor(n / (101 / LOADING.length)))];
+
+  return (
+    <motion.div className="loader" role="status" aria-label="Loading"
+      initial={{ clipPath: "inset(0% 0% 0% 0%)" }}
+      exit={{ clipPath: "inset(0% 0% 100% 0%)" }}
+      transition={{ duration: 0.95, ease: CURTAIN }}>
+      <div className="loader-mark">
+        <span className="loader-clip">
+          <motion.span initial={{ y: "110%" }} animate={{ y: 0 }} transition={{ duration: 0.8, ease: EASE, delay: 0.1 }}>
+            pratik<b>.</b>
+          </motion.span>
+        </span>
+        <svg viewBox="0 0 340 150" aria-hidden="true">
+          <motion.path
+            d="M70 40 C 120 14, 250 10, 300 42 C 345 72, 300 128, 200 136 C 110 143, 30 122, 26 86 C 22 52, 80 30, 150 24"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+            transition={{ duration: reduce ? 0 : 1.5, ease: "easeInOut", delay: 0.35 }} />
+        </svg>
+      </div>
+      <div className="loader-line">
+        <AnimatePresence mode="wait">
+          <motion.p key={line} initial={{ y: 14, opacity: 0, rotate: -2 }} animate={{ y: 0, opacity: 1, rotate: -2 }}
+            exit={{ y: -14, opacity: 0 }} transition={{ duration: 0.22 }}>
+            {line}{n < 100 ? "…" : " ✓"}
+          </motion.p>
+        </AnimatePresence>
+      </div>
+      <div className="loader-foot">
+        <span className="loader-count">{String(n).padStart(3, "0")}</span>
+        <div className="loader-bar"><motion.i style={{ scaleX: n / 100 }} /></div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ── dotted paper that drifts a little slower than the page ── */
+
+function Dots() {
+  const { scrollY } = useScroll();
+  const reduce = useReducedMotion();
+  const y = useTransform(scrollY, v => (reduce ? 0 : -((v * 0.3) % 24)));
+  return <motion.div className="dots" style={{ y }} aria-hidden="true" />;
+}
+
 /* ── header ────────────────────────────────────────────────── */
 
 function Header() {
@@ -49,9 +143,6 @@ function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("");
   const [time, setTime] = useState("--:--");
-  const [theme, setTheme] = useState(() =>
-    document.documentElement.dataset.theme ||
-    (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
 
   useMotionValueEvent(scrollY, "change", v => setScrolled(v > 8));
 
@@ -71,13 +162,6 @@ function Header() {
     return () => io.disconnect();
   }, []);
 
-  const flip = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = next;
-    try { localStorage.setItem("theme", next); } catch (e) { /* private mode */ }
-    setTheme(next);
-  };
-
   return (
     <>
       <motion.div className="progress" style={{ scaleX: bar }} aria-hidden="true" />
@@ -91,12 +175,7 @@ function Header() {
             </a>
           ))}
         </nav>
-        <div className="top-right">
-          <span className="clock" title="My local time in Bengaluru">BLR <time>{time}</time></span>
-          <button className="theme" type="button" onClick={flip} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}>
-            <motion.span className="theme-dot" animate={{ rotate: theme === "dark" ? 180 : 0 }} transition={{ duration: 0.5, ease: EASE }} />
-          </button>
-        </div>
+        <span className="clock" title="My local time in Bengaluru"><i aria-hidden="true" />BLR <time>{time}</time></span>
       </header>
     </>
   );
@@ -105,34 +184,59 @@ function Header() {
 /* ── hero ──────────────────────────────────────────────────── */
 
 const HEADLINE = ["I build AI tools,", "then spend weeks", "trying to "];
+const HERO_PICS = [
+  { img: "assets/shots/securegent-2.webp", note: "securegent saying no", tilt: -6, speed: -260, cls: "hp-1" },
+  { img: "assets/shots/aadhaarguard-1.webp", note: "aadhaarguard at work", tilt: 5, speed: -140, cls: "hp-2" },
+  { img: "assets/shots/pypi-securegent.webp", note: "on pypi!!", tilt: -2, speed: -360, cls: "hp-3" },
+];
 
-function Hero() {
+function HeroPic({ pic, i, progress, ready }) {
+  const reduce = useReducedMotion();
+  const y = useTransform(progress, [0, 1], [0, reduce ? 0 : pic.speed]);
+  const rotate = useTransform(progress, [0, 1], [pic.tilt, pic.tilt + (reduce ? 0 : (i % 2 ? 8 : -8))]);
+  return (
+    <motion.div className={`hero-pic ${pic.cls}`} style={{ y, rotate }}>
+      <motion.div
+        initial={{ opacity: 0, y: 80, scale: 0.85, rotate: i % 2 ? 14 : -14 }}
+        animate={ready ? { opacity: 1, y: 0, scale: 1, rotate: 0 } : {}}
+        transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.55 + i * 0.14 }}
+        whileHover={{ scale: 1.05, rotate: i % 2 ? -3 : 3, zIndex: 5 }}>
+        <Polaroid img={pic.img} note={pic.note} />
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function Hero({ ready }) {
   const reduce = useReducedMotion();
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const drift = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -80]);
-  const fade = useTransform(scrollYProgress, [0, 0.8], [1, reduce ? 1 : 0.2]);
+  const drift = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -60]);
+  const go = ready ? "show" : "hide";
 
   const counts = [
     [projects.length, "projects below"],
     [2, "packages on PyPI"],
+    ["14/14", "red-team attacks blocked"],
     [1, "Linux kernel module"],
-    [2, "live web apps"],
   ];
 
   return (
     <section className="hero" ref={ref}>
-      <motion.div style={{ y: drift, opacity: fade }}>
-        <motion.p className="hello" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}>
-          Hi, I'm Pratik.
+      <motion.div className="hero-copy" style={{ y: drift }}>
+        <motion.p className="hello" initial={{ opacity: 0, rotate: -4, y: 10 }} animate={ready ? { opacity: 1, rotate: -4, y: 0 } : {}} transition={{ duration: 0.6, delay: 0.1 }}>
+          hi, I'm Pratik
+          <svg className="wave" viewBox="0 0 40 40" aria-hidden="true">
+            <motion.path d="M8 20 C 12 10, 18 30, 22 18 S 30 12, 34 22" initial={{ pathLength: 0 }} animate={ready ? { pathLength: 1 } : {}} transition={{ duration: 0.6, delay: 0.5 }} />
+          </svg>
         </motion.p>
         <h1 className="headline">
           {HEADLINE.map((line, i) => (
             <span className="line" key={i}>
               <motion.span
-                initial={{ y: "105%" }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.9, ease: EASE, delay: 0.15 + i * 0.09 }}
+                initial="hide" animate={go}
+                variants={{ hide: { y: "110%", rotate: 3 }, show: { y: 0, rotate: 0 } }}
+                transition={{ duration: 1, ease: EASE, delay: 0.15 + i * 0.1 }}
               >
                 {line}
                 {i === 2 && (
@@ -140,8 +244,8 @@ function Hero() {
                     <svg viewBox="0 0 300 24" preserveAspectRatio="none" aria-hidden="true">
                       <motion.path
                         d="M3 15 C 40 6, 80 20, 120 12 S 200 4, 240 13 S 285 18, 297 9"
-                        initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-                        transition={{ duration: 0.9, ease: "easeInOut", delay: 1.05 }}
+                        initial={{ pathLength: 0 }} animate={ready ? { pathLength: 1 } : {}}
+                        transition={{ duration: 0.9, ease: "easeInOut", delay: 1.1 }}
                       />
                     </svg>
                   </em>
@@ -150,29 +254,115 @@ function Hero() {
             </span>
           ))}
         </h1>
+        <motion.p className="margin-note" initial={{ opacity: 0 }} animate={ready ? { opacity: 1 } : {}} transition={{ delay: 1.6, duration: 0.6 }}>
+          <svg viewBox="0 0 60 40" aria-hidden="true"><path d="M56 6 C 40 4, 22 10, 12 28 M4 20 L 12 30 L 22 22" /></svg>
+          (mostly my own tools)
+        </motion.p>
+
+        <div className="hero-foot">
+          <motion.p className="intro" initial={{ opacity: 0, y: 16 }} animate={ready ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7, ease: EASE, delay: 0.6 }}>
+            Computer science student at PES University, Bengaluru, and an intern at PESU Research
+            Foundation. Right now: security tooling for AI agents and for Indian personal data.
+            Before that, sign language recognition, drug&ndash;gene risk models, a container
+            runtime in C, and the usual pile of web apps.
+          </motion.p>
+          <motion.dl className="counts" initial="h" animate={ready ? "s" : "h"}
+            variants={{ s: { transition: { staggerChildren: 0.08, delayChildren: 0.8 } } }}>
+            {counts.map(([n, what]) => (
+              <motion.div key={what} variants={{ h: { opacity: 0, y: 12 }, s: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } } }}>
+                <dt>{n}</dt><dd>{what}</dd>
+              </motion.div>
+            ))}
+          </motion.dl>
+        </div>
       </motion.div>
 
-      <div className="hero-foot">
-        <motion.p className="intro" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: EASE, delay: 0.6 }}>
-          Computer science student at PES University, Bengaluru, and an intern at PESU Research
-          Foundation. Right now: security tooling for AI agents and for Indian personal data.
-          Before that, sign language recognition, drug&ndash;gene risk models, a container
-          runtime in C, and the usual pile of web apps.
-        </motion.p>
-        <motion.dl className="counts" initial="h" animate="s"
-          variants={{ s: { transition: { staggerChildren: 0.07, delayChildren: 0.75 } } }}>
-          {counts.map(([n, what]) => (
-            <motion.div key={what} variants={{ h: { opacity: 0, y: 12 }, s: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } } }}>
-              <dt>{n}</dt><dd>{what}</dd>
-            </motion.div>
-          ))}
-        </motion.dl>
+      <div className="hero-pics" aria-hidden="true">
+        {HERO_PICS.map((pic, i) => <HeroPic key={pic.cls} pic={pic} i={i} progress={scrollYProgress} ready={ready} />)}
       </div>
 
-      <motion.a className="scroll-hint" href="#work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4, duration: 0.8 }}>
-        <svg viewBox="0 0 60 70" aria-hidden="true"><path d="M8 6 C 30 8, 48 22, 40 44 C 37 52, 32 58, 28 63 M18 56 L 28 64 L 34 52" /></svg>
-        <span>start with the two I'm proudest of</span>
+      <motion.a className="scroll-hint" href="#desk" initial={{ opacity: 0 }} animate={ready ? { opacity: 1 } : {}} transition={{ delay: 1.8, duration: 0.8 }}>
+        <motion.svg viewBox="0 0 60 70" aria-hidden="true" animate={reduce ? {} : { y: [0, 6, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
+          <path d="M8 6 C 30 8, 48 22, 40 44 C 37 52, 32 58, 28 63 M18 56 L 28 64 L 34 52" />
+        </motion.svg>
+        <span>scroll, things move</span>
       </motion.a>
+    </section>
+  );
+}
+
+/* ── marquee that speeds up with your scroll ───────────────── */
+
+function Marquee({ words, tilt = -1.5, flip = false }) {
+  const reduce = useReducedMotion();
+  const base = useMotionValue(0);
+  const { scrollY } = useScroll();
+  const vel = useSpring(useVelocity(scrollY), { damping: 50, stiffness: 400 });
+  const boost = useTransform(vel, [0, 1000], [0, 4], { clamp: false });
+  const x = useTransform(base, v => `${wrap(-50, 0, v)}%`);
+  const dir = useRef(flip ? -1 : 1);
+
+  useAnimationFrame((_, delta) => {
+    if (reduce) return;
+    const b = boost.get();
+    if (b < 0) dir.current = flip ? 1 : -1; else if (b > 0) dir.current = flip ? -1 : 1;
+    let move = dir.current * -1.6 * (delta / 1000);
+    move += move * Math.abs(b);
+    base.set(base.get() + move);
+  });
+
+  const row = words.map(w => <span key={w}>{w}<i aria-hidden="true">✺</i></span>);
+  return (
+    <div className={`marquee${flip ? " alt" : ""}`} style={{ "--tilt": `${tilt}deg` }} aria-hidden="true">
+      <motion.div className="marquee-track" style={{ x }}>{row}{row}{row}{row}</motion.div>
+    </div>
+  );
+}
+
+/* ── the desk: a pinned strip of snapshots, scroll moves it sideways ── */
+
+function DeskCard({ s, i, progress }) {
+  const reduce = useReducedMotion();
+  const amp = reduce ? 0 : 36 + (i % 3) * 16;
+  const y = useTransform(progress, [0, 1], i % 2 ? [amp, -amp] : [-amp, amp]);
+  const rotate = useTransform(progress, [0, 1], [s.tilt, s.tilt + (reduce ? 0 : (i % 2 ? -4 : 4))]);
+  return (
+    <motion.div className={`desk-card${s.term ? " is-term" : ""}`} style={{ y, rotate }}
+      whileHover={{ scale: 1.04, rotate: 0, transition: { type: "spring", stiffness: 300, damping: 18 } }}>
+      <Polaroid img={s.img} term={s.term} note={s.note} />
+    </motion.div>
+  );
+}
+
+function Desk() {
+  const ref = useRef(null);
+  const track = useRef(null);
+  const [dist, setDist] = useState(0);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
+  const raw = useTransform(scrollYProgress, [0, 1], [0, -dist]);
+  const x = useSpring(raw, { stiffness: 140, damping: 30, mass: 0.35 });
+
+  useEffect(() => {
+    const measure = () => { if (track.current) setDist(Math.max(0, track.current.scrollWidth - window.innerWidth)); };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(track.current);
+    addEventListener("resize", measure);
+    return () => { ro.disconnect(); removeEventListener("resize", measure); };
+  }, []);
+
+  return (
+    <section className="desk" id="desk" ref={ref} style={{ height: `calc(100svh + ${dist}px)` }} aria-label="Snapshots from my projects">
+      <div className="desk-pin">
+        <div className="desk-head">
+          <Label n="00">on my desk</Label>
+          <Reveal as="h2" className="chapter-title">Screenshots, terminals,<br /><em>proof it actually runs.</em></Reveal>
+        </div>
+        <motion.div className="desk-track" ref={track} style={{ x }}>
+          {snaps.map((s, i) => <DeskCard key={s.note} s={s} i={i} progress={scrollYProgress} />)}
+          <p className="desk-end">that's the desk.<br />now the details ↓</p>
+        </motion.div>
+      </div>
     </section>
   );
 }
@@ -181,8 +371,12 @@ function Hero() {
 
 function CaseCard({ p, i, total, progress }) {
   const reduce = useReducedMotion();
+  const media = useRef(null);
   const start = i / total;
   const scale = useTransform(progress, [start, 1], [1, reduce ? 1 : 1 - (total - 1 - i) * 0.05]);
+  const { scrollYProgress: mp } = useScroll({ target: media, offset: ["start end", "end start"] });
+  const my = useTransform(mp, [0, 1], [reduce ? 0 : 50, reduce ? 0 : -50]);
+  const mr = useTransform(mp, [0, 1], [reduce ? 0 : 2.5, reduce ? 0 : -1.5]);
   return (
     <div className="case-slot" style={{ "--i": i }}>
       <motion.article className="case" style={{ scale }}>
@@ -198,13 +392,14 @@ function CaseCard({ p, i, total, progress }) {
             {p.links.map(([t, href]) => <a key={t} href={href} {...(href.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}>{t} <span aria-hidden="true">&#8599;</span></a>)}
           </p>
         </div>
-        <figure className="case-media">
+        <motion.figure className="case-media" ref={media} style={{ y: my, rotate: mr }}>
+          <span className="tape" aria-hidden="true" />
           <div className="window">
             <div className="window-bar" aria-hidden="true"><i /><i /><i /><span>{p.id}</span></div>
             <img src={p.media.src} alt={p.media.alt} width={p.media.w} height={p.media.h} loading="lazy" />
           </div>
           <figcaption>{p.media.caption}</figcaption>
-        </figure>
+        </motion.figure>
       </motion.article>
     </div>
   );
@@ -229,8 +424,8 @@ function Featured() {
 function Preview({ project, x, y }) {
   return (
     <motion.div className="peek" style={{ x, y }} aria-hidden="true"
-      initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.18 }}>
+      initial={{ opacity: 0, scale: 0.9, rotate: -4 }} animate={{ opacity: 1, scale: 1, rotate: -2 }} exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ duration: 0.2 }}>
       <div className="peek-bar"><i /><i /><i /><span>{project.id}</span></div>
       <AnimatePresence mode="wait" initial={false}>
         <motion.pre key={project.id}
@@ -359,7 +554,7 @@ function Playground() {
   let pos = 0;
   hits.forEach((f, i) => {
     parts.push(text.slice(pos, f.start));
-    parts.push(<motion.mark key={`${f.start}-${style}`} initial={{ backgroundColor: "var(--signal)" }} animate={{ backgroundColor: "var(--signal-soft)" }} transition={{ duration: 0.6, delay: i * 0.04 }}>{redact(f, style)}</motion.mark>);
+    parts.push(<motion.mark key={`${f.start}-${style}`} initial={{ backgroundColor: "#ff5b14" }} animate={{ backgroundColor: "#ffe6d6" }} transition={{ duration: 0.6, delay: i * 0.04 }}>{redact(f, style)}</motion.mark>);
     pos = f.end;
   });
   parts.push(text.slice(pos, 20000));
@@ -368,7 +563,7 @@ function Playground() {
     <section className="chapter" id="playground">
       <Label n="03">try it</Label>
       <div className="try-head">
-        <Reveal as="h2" className="chapter-title">Paste something<br />you shouldn't paste.</Reveal>
+        <Reveal as="h2" className="chapter-title">Paste something<br /><em>you shouldn't paste.</em></Reveal>
         <Reveal as="p" className="aside" delay={0.1}>
           A small JavaScript port of aadhaarguard runs in your browser. Nothing leaves this page,
           and the sample is fake.
@@ -426,7 +621,7 @@ function About() {
       <Label n="05">about</Label>
       <div className="about-grid">
         <Reveal className="about-text">
-          <p className="big">I like problems where being wrong is expensive: health data, money, personal IDs, AI that can take actions.</p>
+          <p className="big">I like problems where being wrong is <em>expensive</em>: health data, money, personal IDs, AI that can take actions.</p>
           <p>
             I'm a B.Tech CSE student at PES University and an intern at PESU Research Foundation.
             I started out building ML projects for healthcare and accessibility, and drifted into
@@ -486,6 +681,10 @@ function Contact() {
             </motion.span>
           </AnimatePresence>
         </button>
+        <p className="say-hi" aria-hidden="true">
+          <svg viewBox="0 0 70 40"><path d="M66 30 C 50 34, 26 30, 12 14 M6 22 L 11 12 L 22 12" /></svg>
+          say hi, I reply
+        </p>
       </Reveal>
       <Reveal as="ul" className="elsewhere" delay={0.15}>
         <li><a href="https://www.linkedin.com/in/pratikpatil2105/" target="_blank" rel="noreferrer">LinkedIn &#8599;</a></li>
@@ -496,13 +695,22 @@ function Contact() {
 }
 
 export default function App() {
+  const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
+  const done = useMemo(() => () => { setLoading(false); setTimeout(() => setReady(true), 250); }, []);
+
   return (
     <MotionConfig reducedMotion="user">
+      <AnimatePresence>{loading && <Loader key="loader" onDone={done} />}</AnimatePresence>
+      <Dots />
       <Header />
       <main id="top">
-        <Hero />
+        <Hero ready={ready} />
+        <Marquee words={["security for AI agents", "Indian PII", "machine learning", "systems in C", "web apps", "breaking my own code"]} />
+        <Desk />
         <Featured />
         <Projects />
+        <Marquee words={["test against the real thing", "ship it", "then break it", "write it down"]} tilt={1.2} flip />
         <Playground />
         <Log />
         <About />
@@ -510,7 +718,7 @@ export default function App() {
       </main>
       <footer className="foot">
         <p>&copy; 2026 Pratik Patil &middot; Bengaluru</p>
-        <p>React and Framer Motion. Set in Recursive &amp; Newsreader. No tracking.</p>
+        <p>React + Motion. Set in Fraunces, Recursive &amp; Caveat. No tracking.</p>
         <a href="#top">back to top &uarr;</a>
       </footer>
     </MotionConfig>

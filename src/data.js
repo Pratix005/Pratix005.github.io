@@ -85,7 +85,7 @@ export const projects = [
     stack: ["React", "TypeScript", "FastAPI", "MediaPipe", "TensorFlow"],
     detail:
       "Real-time gesture recognition from the webcam with MediaPipe hand landmarks and an MLP, sign ↔ text translation, and a learning mode that scores your pose against a reference with DTW. Works for Indian and American sign language.",
-    links: [["live", "https://sign-ai-tan.vercel.app"], ["code", `${GH}/SIGN_AI`]],
+    links: [["code", `${GH}/SIGN_AI`]],
     peek: ["hand landmarks   21 × 3", "model            MLP", "practice score   DTW distance", "mode             ISL / ASL"],
   },
   {
@@ -157,7 +157,7 @@ export const projects = [
     line: "My first web project: the homepage, rebuilt in plain HTML and CSS.",
     stack: ["HTML", "CSS"],
     detail: "Where it started: a static page built by hand to learn layout with flexbox and positioning.",
-    links: [["live", "https://amazon-xi-three.vercel.app"], ["code", `${GH}/amazon`]],
+    links: [["code", `${GH}/amazon`]],
     peek: ["amazon.html", "amazonstyle.css", "display: flex;  /* everywhere */"],
   },
   {
@@ -205,4 +205,18 @@ export const tools = [
   ["systems", "Linux, kernel modules, namespaces, pthreads, OpenFlow"],
   ["security", "MCP, prompt-injection defence, Wazuh / SIEM, fuzzing, Bandit"],
   ["infra", "Docker, AWS (Lambda, Bedrock, SNS), GitHub Actions, PostgreSQL, MongoDB"],
+];
+
+// The "desk": snapshots that slide past while you scroll. `img` is a real
+// screenshot; `term` is a few real lines rendered as a terminal.
+export const snaps = [
+  { img: "assets/shots/securegent-2.webp", note: "securegent catching 6 bad calls", tilt: -3 },
+  { img: "assets/shots/aadhaarguard-1.webp", note: "aadhaarguard vs. a customer file", tilt: 2.5 },
+  { term: ["$ sudo ./engine start memtest \\", "    --hard-mib 20", "", "[container_monitor] SOFT LIMIT", "    rss=17297408", "[container_monitor] HARD LIMIT", "memtest   state=killed"], note: "my kernel module, being ruthless", tilt: -1.5 },
+  { img: "assets/shots/pypi-securegent.webp", note: "shipped it! 0.3.0", tilt: 3.5 },
+  { term: ["h1 ─┐", "     s1 ── s2 ── s3 ─┬─ h3", "h2 ─┘               └─ h4", "", "flows reinstalled every 10 s"], note: "SDN routing, drawn in ascii", tilt: -2.5 },
+  { img: "assets/shots/securegent-3.webp", note: "the big orange stop button", tilt: 1.5 },
+  { img: "assets/shots/pypi-aadhaarguard.webp", note: "package #2", tilt: -3.5 },
+  { term: ["$ pes add main.c", "$ pes commit -m \"phase 3\"", ".pes/objects/ab/cdef…", "$ pes log"], note: "git, but I wrote it", tilt: 2 },
+  { img: "assets/shots/github.webp", note: "where all of it lives", tilt: -1 },
 ];
