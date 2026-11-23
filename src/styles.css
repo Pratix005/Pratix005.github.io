@@ -330,8 +330,8 @@ pre { margin: 0; }
   font-family: var(--serif); font-variation-settings: var(--soft); font-style: italic; font-weight: 400;
   font-size: clamp(1.4rem, 1rem + 1.6vw, 2.3rem); line-height: 1.2;
 }
-.marquee-track i { font-style: normal; margin: 0 1.1rem; font-size: .7em; }
-.marquee.alt i { color: var(--signal); }
+.marquee-track .sep { display: inline-block; width: .26em; height: .26em; background: currentColor; transform: rotate(45deg); margin: 0 1em; }
+.marquee.alt .sep { background: var(--signal); }
 
 /* ── the desk (pinned sideways scroll) ──────────────────── */
 .desk { position: relative; margin-top: clamp(3rem, 8vh, 5rem); }

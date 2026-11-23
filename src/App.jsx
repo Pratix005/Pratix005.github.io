@@ -114,10 +114,11 @@ function CoverArt({ kind }) {
     case "mask": return <p className="cv-mono">Aadhaar<br /><mark>XXXX XXXX</mark> 8697<br />PAN <mark>XXXXX</mark>234F</p>;
     case "hand": return (
       <svg viewBox="0 0 100 70">
-        <circle className="w" cx="50" cy="58" r="9" />
-        {[[22, 30], [34, 12], [50, 6], [66, 12], [80, 34]].map(([x, y], i) => (
-          <g key={i}><path className="w" d={`M50 58 L${(50 + x) / 2} ${(58 + y) / 2 + 4} L${x} ${y}`} /><circle className="wf" cx={x} cy={y} r="3.2" /><circle className="wf" cx={(50 + x) / 2} cy={(58 + y) / 2 + 4} r="2.4" /></g>
-        ))}
+        <path className="w" d="M6 18 V6 H18 M54 6 H66 V18 M66 52 V64 H54 M18 64 H6 V52" />
+        <rect className="w" x="20" y="20" width="32" height="30" rx="6" />
+        <path className="w" d="M36 50 V58" />
+        <path className="wf" d="M70 26 H96 V44 H84 L78 50 V44 H70 Z" />
+        <path className="i" d="M75 32 H91 M75 38 H86" style={{ stroke: "var(--signal)", opacity: 1 }} />
       </svg>);
     case "boxes": return <svg viewBox="0 0 100 60"><rect className="o" x="8" y="6" width="84" height="48" rx="4" /><rect className="w" x="20" y="16" width="34" height="28" rx="3" /><rect className="w" x="60" y="16" width="22" height="28" rx="3" /><path className="o" d="M64 26 l14 12 M78 26 l-14 12" /></svg>;
     case "pills": return <p className="cv-pills"><span>Safe</span><span>Risk</span><span className="hot">High-Risk</span></p>;
@@ -417,7 +418,7 @@ function Marquee({ words, tilt = -1.5, flip = false, className = "" }) {
     base.set(base.get() + move);
   });
 
-  const row = words.map(w => <span key={w}>{w}<i aria-hidden="true">✺</i></span>);
+  const row = words.map(w => <span key={w}>{w}<i aria-hidden="true" className="sep" /></span>);
   return (
     <div className={`marquee ${className}`} style={{ "--tilt": `${tilt}deg` }} aria-hidden="true">
       <motion.div className="marquee-track" style={{ x }}>{row}{row}{row}{row}</motion.div>
