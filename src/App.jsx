@@ -919,74 +919,7 @@ function Footer() {
   );
 }
 
-/* ── colour picker: add ?picker to the URL to try colours live ── */
-
-const PRESETS = ["#ff5b14", "#1f5eff", "#e8174f", "#00a06a", "#7a3cff", "#d1149a", "#ffc21a", "#0097a7", "#c8f135", "#111111", "#8a1538", "#5b6b1f"];
-const PICK_KEY = "portfolio-picker";
-
-function mix(a, b, t) {
-  const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-  const [x, y] = [p(a), p(b)];
-  return "#" + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, "0")).join("");
-}
-const lum = h => { const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255); return 0.299 * r + 0.587 * g + 0.114 * b; };
-
-function Picker() {
-  const [open, setOpen] = useState(true);
-  const [c, setC] = useState(() => {
-    try { return { accent: "#ff5b14", paper: "#ffffff", ink: "#1d1a17", on: "#ffffff", ...JSON.parse(localStorage.getItem(PICK_KEY) || "{}") }; }
-    catch (e) { return { accent: "#ff5b14", paper: "#ffffff", ink: "#1d1a17", on: "#ffffff" }; }
-  });
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    const r = document.documentElement.style;
-    r.setProperty("--signal", c.accent);
-    r.setProperty("--on-signal", c.on);
-    r.setProperty("--paper", c.paper);
-    r.setProperty("--ink", c.ink);
-    r.setProperty("--paper-2", mix(c.paper, c.accent, 0.05));
-    r.setProperty("--mid", mix(c.ink, c.paper, 0.3));
-    r.setProperty("--low", mix(c.ink, c.paper, 0.48));
-    r.setProperty("--line", mix(c.paper, c.ink, 0.08));
-    r.setProperty("--dot", mix(c.paper, c.ink, 0.16));
-    r.setProperty("--term", lum(c.paper) < 0.3 ? mix(c.paper, "#ffffff", 0.06) : c.ink);
-    try { localStorage.setItem(PICK_KEY, JSON.stringify(c)); } catch (e) { /* private mode */ }
-  }, [c]);
-
-  const set = (k, v) => setC(o => ({ ...o, [k]: v }));
-  const setAccent = v => setC(o => ({ ...o, accent: v, on: lum(v) > 0.62 ? "#111111" : "#ffffff" }));
-  const random = () => setAccent("#" + [0, 0, 0].map(() => Math.floor(40 + Math.random() * 215).toString(16).padStart(2, "0")).join(""));
-  const reset = () => setC({ accent: "#ff5b14", paper: "#ffffff", ink: "#1d1a17", on: "#ffffff" });
-  const code = `accent ${c.accent} · background ${c.paper} · text ${c.ink} · on-accent ${c.on}`;
-  const copy = async () => { try { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) { /* select manually */ } };
-
-  if (!open) return <button className="picker-open" type="button" onClick={() => setOpen(true)}>colours</button>;
-  return (
-    <div className="picker" role="dialog" aria-label="Colour picker">
-      <h4>try colours <button type="button" onClick={() => setOpen(false)} aria-label="Close">×</button></h4>
-      <label>main colour <input type="color" value={c.accent} onChange={e => setAccent(e.target.value)} /></label>
-      <div className="row">{PRESETS.map(p => <button key={p} type="button" className="sw" style={{ background: p }} aria-label={p} onClick={() => setAccent(p)} />)}</div>
-      <label>background <input type="color" value={c.paper} onChange={e => set("paper", e.target.value)} /></label>
-      <label>text <input type="color" value={c.ink} onChange={e => set("ink", e.target.value)} /></label>
-      <label>text on main colour
-        <span className="seg">
-          <button type="button" aria-pressed={c.on === "#ffffff"} onClick={() => set("on", "#ffffff")}>white</button>
-          <button type="button" aria-pressed={c.on === "#111111"} onClick={() => set("on", "#111111")}>black</button>
-        </span>
-      </label>
-      <div className="btns">
-        <button type="button" onClick={random}>random</button>
-        <button type="button" onClick={reset}>reset</button>
-        <button type="button" onClick={copy}>{copied ? "copied" : "copy"}</button>
-      </div>
-      <code>{code}</code>
-    </div>
-  );
-}
-
 export default function App() {
-  const picker = useMemo(() => new URLSearchParams(location.search).has("picker"), []);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
   const done = useMemo(() => () => { setLoading(false); setTimeout(() => setReady(true), 250); }, []);
@@ -1013,7 +946,6 @@ export default function App() {
         <Contact />
       </main>
       <Footer />
-      {picker && <Picker />}
     </MotionConfig>
   );
 }
