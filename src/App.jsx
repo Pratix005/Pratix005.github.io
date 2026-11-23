@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AnimatePresence, LayoutGroup, MotionConfig, animate, motion,
-  useAnimationFrame, useMotionValue, useMotionValueEvent, useReducedMotion,
+  useAnimationFrame, useInView, useMotionValue, useMotionValueEvent, useReducedMotion,
   useScroll, useSpring, useTransform, useVelocity,
 } from "motion/react";
-import { categories, featured, log, projects, snaps, tools } from "./data.js";
+import { categories, featured, projects, results, snaps, tools } from "./data.js";
 import { redact, scan } from "./scan.js";
 
 const EASE = [0.2, 0.7, 0.1, 1];
 const CURTAIN = [0.76, 0, 0.24, 1];
-const NAV = [["work", "work"], ["projects", "projects"], ["playground", "try it"], ["about", "about"], ["contact", "contact"]];
+const NAV = [["work", "work"], ["results", "results"], ["projects", "projects"], ["playground", "try it"], ["about", "about"], ["contact", "contact"]];
 
 /* ── small helpers ─────────────────────────────────────────── */
 
@@ -261,10 +261,10 @@ function Hero({ ready }) {
 
         <div className="hero-foot">
           <motion.p className="intro" initial={{ opacity: 0, y: 16 }} animate={ready ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7, ease: EASE, delay: 0.6 }}>
-            Computer science student at PES University, Bengaluru, and an intern at PESU Research
-            Foundation. Right now: security tooling for AI agents and for Indian personal data.
-            Before that, sign language recognition, drug&ndash;gene risk models, a container
-            runtime in C, and the usual pile of web apps.
+            Computer science student at PES University, Bengaluru. I like problems where a
+            mistake costs something real, so I build carefully, publish the code, and then
+            write the tests that try to prove me wrong. Security, machine learning and
+            low-level systems, mostly.
           </motion.p>
           <motion.dl className="counts" initial="h" animate={ready ? "s" : "h"}
             variants={{ s: { transition: { staggerChildren: 0.08, delayChildren: 0.8 } } }}>
@@ -419,6 +419,51 @@ function Featured() {
   );
 }
 
+/* ── results: numbers that count up when they arrive ─────── */
+
+function Count({ value }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "0px 0px -15% 0px" });
+  const reduce = useReducedMotion();
+  const m = value.match(/^([^\d]*)(\d+(?:\.\d+)?)(.*)$/);
+  const [pre, num, post] = m ? [m[1], m[2], m[3]] : ["", null, value];
+  const dec = num && num.includes(".") ? num.split(".")[1].length : 0;
+  const [shown, setShown] = useState(num ? (0).toFixed(dec) : "");
+  useEffect(() => {
+    if (!num || !inView) return;
+    if (reduce) { setShown(num); return; }
+    const run = animate(0, parseFloat(num), { duration: 1.5, ease: EASE, onUpdate: v => setShown(v.toFixed(dec)) });
+    return () => run.stop();
+  }, [inView, num, dec, reduce]);
+  return <span ref={ref} aria-label={value}>{pre}{shown}{post}</span>;
+}
+
+function Results() {
+  return (
+    <section className="chapter" id="results">
+      <Label n="02">results</Label>
+      <div className="projects-head">
+        <Reveal as="h2" className="chapter-title">What the projects<br /><em>actually did.</em></Reveal>
+        <Reveal as="p" className="aside" delay={0.1}>Every number here comes from a repo or a test run you can repeat.</Reveal>
+      </div>
+      <ul className="results">
+        {results.map((r, i) => (
+          <motion.li key={r.what}
+            initial={{ opacity: 0, y: 40, rotate: i % 2 ? 3 : -3 }}
+            whileInView={{ opacity: 1, y: 0, rotate: i % 2 ? 0.8 : -0.8 }}
+            whileHover={{ y: -8, rotate: 0, transition: { type: "spring", stiffness: 300, damping: 16 } }}
+            viewport={{ once: true, margin: "0px 0px -10% 0px" }}
+            transition={{ duration: 0.65, ease: EASE, delay: (i % 4) * 0.08 }}>
+            <span className="res-n"><Count value={r.n} /></span>
+            <p>{r.what}</p>
+            <span className="res-from">{r.from}</span>
+          </motion.li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /* ── all projects: filterable index with a cursor preview ──── */
 
 function Preview({ project, x, y }) {
@@ -504,10 +549,10 @@ function Projects() {
 
   return (
     <section className="chapter" id="projects">
-      <Label n="02">everything I've built</Label>
+      <Label n="03">everything I've built</Label>
       <div className="projects-head">
-        <Reveal as="h2" className="chapter-title">All {projects.length} projects, <em>coursework included.</em></Reveal>
-        <Reveal as="p" className="aside" delay={0.1}>Click a row for the details. The two above are first; the rest are newest first, roughly.</Reveal>
+        <Reveal as="h2" className="chapter-title">All {projects.length} projects, <em>big and small.</em></Reveal>
+        <Reveal as="p" className="aside" delay={0.1}>Click a row for the details. The two featured above come first.</Reveal>
       </div>
 
       <Reveal className="chips" delay={0.05}>
@@ -561,7 +606,7 @@ function Playground() {
 
   return (
     <section className="chapter" id="playground">
-      <Label n="03">try it</Label>
+      <Label n="04">try it</Label>
       <div className="try-head">
         <Reveal as="h2" className="chapter-title">Paste something<br /><em>you shouldn't paste.</em></Reveal>
         <Reveal as="p" className="aside" delay={0.1}>
@@ -594,25 +639,6 @@ function Playground() {
   );
 }
 
-/* ── log ───────────────────────────────────────────────────── */
-
-function Log() {
-  return (
-    <section className="chapter" id="log">
-      <Label n="04">things that broke</Label>
-      <Reveal as="h2" className="chapter-title">A short log of mistakes,<br /><em>mostly mine.</em></Reveal>
-      <ol className="log">
-        {log.map(([when, title, body], i) => (
-          <Reveal as="li" key={title} delay={Math.min(i, 3) * 0.05}>
-            <time>{when}</time>
-            <div><h4>{title}</h4><p>{body}</p></div>
-          </Reveal>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 /* ── about ─────────────────────────────────────────────────── */
 
 function About() {
@@ -623,8 +649,7 @@ function About() {
         <Reveal className="about-text">
           <p className="big">I like problems where being wrong is <em>expensive</em>: health data, money, personal IDs, AI that can take actions.</p>
           <p>
-            I'm a B.Tech CSE student at PES University and an intern at PESU Research Foundation.
-            I started out building ML projects for healthcare and accessibility, and drifted into
+            I'm a B.Tech CSE student at PES University. I started out building ML projects for healthcare and accessibility, and drifted into
             security once I noticed most of those systems would happily leak what they were meant
             to protect. These days I write tools for that, publish them, and then write the test
             that tries to break them.
@@ -709,16 +734,15 @@ export default function App() {
         <Marquee words={["security for AI agents", "Indian PII", "machine learning", "systems in C", "web apps", "breaking my own code"]} />
         <Desk />
         <Featured />
+        <Results />
         <Projects />
         <Marquee words={["test against the real thing", "ship it", "then break it", "write it down"]} tilt={1.2} flip />
         <Playground />
-        <Log />
         <About />
         <Contact />
       </main>
       <footer className="foot">
         <p>&copy; 2026 Pratik Patil &middot; Bengaluru</p>
-        <p>React + Motion. Set in Fraunces, Recursive &amp; Caveat. No tracking.</p>
         <a href="#top">back to top &uarr;</a>
       </footer>
     </MotionConfig>

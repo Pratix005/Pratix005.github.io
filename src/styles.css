@@ -511,3 +511,26 @@ pre { margin: 0; }
 }
 .foot p { margin: 0; }
 .foot a { text-decoration: none; }
+
+/* ── results ────────────────────────────────────────────── */
+.results {
+  list-style: none; margin: 2.5rem 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(.9rem, 2vw, 1.4rem);
+}
+.results li {
+  display: flex; flex-direction: column; gap: .5rem;
+  padding: 1.2rem 1.2rem 1rem; border-radius: 16px 20px 14px 18px;
+  background: var(--paper); border: 1.5px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
+}
+.results li:nth-child(5n + 1) { background: var(--signal); color: #fff; box-shadow: 4px 4px 0 var(--ink); }
+.results li:nth-child(5n + 1) p, .results li:nth-child(5n + 1) .res-from { color: #fff; }
+.res-n {
+  font-family: var(--serif); font-variation-settings: var(--soft); font-weight: 650;
+  font-size: clamp(2.2rem, 1.6rem + 1.8vw, 3.2rem); line-height: 1; letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums; color: var(--signal);
+}
+.results li:nth-child(5n + 1) .res-n { color: #fff; }
+.results p { margin: 0; flex: 1; font-size: .92rem; line-height: 1.45; color: var(--mid); }
+.res-from { font-family: var(--hand); font-size: 1.3rem; line-height: 1; color: var(--signal-ink); }
+@media (max-width: 1000px) { .results { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 460px) { .results { grid-template-columns: 1fr; } }

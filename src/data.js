@@ -53,8 +53,6 @@ export const categories = [
   ["security", "Security"],
   ["ml", "AI / ML"],
   ["systems", "Systems"],
-  ["web", "Web"],
-  ["practice", "Coursework"],
 ];
 
 // `peek` is what shows in the hover preview: a few real lines from the project.
@@ -127,15 +125,6 @@ export const projects = [
     peek: ["patients   80 (synthetic)", "features   12 clinical + 900 radiomic", "model      Cox PH", "$ python src/demo.py P003"],
   },
   {
-    id: "pes-vcs", cat: "systems", year: "2026", name: "PES-VCS",
-    line: "A version control system written from scratch.",
-    stack: ["C", "OpenSSL"],
-    detail:
-      "Content-addressed object store (SHA-256), tree objects for directories, a staging index, and commit history. Each part maps to a filesystem idea: blobs are files, trees are directories, refs are pointers.",
-    links: [["code", `${GH}/PES2UG24CS372-pes-vcs`]],
-    peek: ["$ pes add main.c", "$ pes commit -m \"phase 3\"", ".pes/objects/ab/cdef…", "$ pes log"],
-  },
-  {
     id: "sdn", cat: "systems", year: "2026", name: "SDN static routing",
     line: "A Ryu controller that installs every route the moment a switch connects.",
     stack: ["Python", "Ryu", "OpenFlow 1.3", "Mininet"],
@@ -144,58 +133,18 @@ export const projects = [
     links: [["code", `${GH}/SDN-Static-Routing`]],
     peek: ["h1 ─┐", "     s1 ── s2 ── s3 ─┬─ h3", "h2 ─┘               └─ h4", "flows reinstalled every 10 s"],
   },
-  {
-    id: "stayease", cat: "web", year: "2026", name: "StayEase",
-    line: "A stay-booking web app on the MERN stack.",
-    stack: ["MongoDB", "Express", "React", "Node"],
-    detail: "A full-stack booking app: React + Vite front end, Express API, MongoDB. Academic project.",
-    links: [["code", `${GH}/StayEase`]],
-    peek: ["client   React + Vite", "server   Express on Node", "db       MongoDB"],
-  },
-  {
-    id: "amazon", cat: "web", year: "2025", name: "Amazon homepage clone",
-    line: "My first web project: the homepage, rebuilt in plain HTML and CSS.",
-    stack: ["HTML", "CSS"],
-    detail: "Where it started: a static page built by hand to learn layout with flexbox and positioning.",
-    links: [["code", `${GH}/amazon`]],
-    peek: ["amazon.html", "amazonstyle.css", "display: flex;  /* everywhere */"],
-  },
-  {
-    id: "se-labs", cat: "practice", year: "2026", name: "Software testing labs",
-    line: "Static analysis, 100% branch coverage and fuzzing on deliberately buggy code.",
-    stack: ["pytest", "Hypothesis", "Pylint", "Bandit", "Flake8"],
-    detail:
-      "Ran Pylint, Flake8 and Bandit on a gym booking ledger and fixed what they found; drove a shipping-quote module to 100% code and branch coverage; wrote Hypothesis property tests that throw random strings at parsers until they crash.",
-    links: [["fuzzing", `${GH}/Lab-7-Fuzz-Testing`], ["coverage", `${GH}/L6_L7_04_shipping_quotation`], ["static analysis", `${GH}/L5_04_fitness_booking`]],
-    peek: ["@given(st.text() | st.none())", "def test_parse_manifest_safe(s):", "Falsifying example: s=''", "branch coverage  100%"],
-  },
-  {
-    id: "target", cat: "practice", year: "2026", name: "Target shooting game",
-    line: "A Pygame lab: fix the hit-detection bug, then build the missing features.",
-    stack: ["Python", "Pygame"],
-    detail: "The starter built a square hitbox from the circle's centre, so clicks outside the target counted. Fixed the hit detection, then built moving targets, combo scoring and a timed round.",
-    links: [["code", `${GH}/04_target_shooting`]],
-    peek: ["Target.get_bounding_rect()", "  bug: rect starts at the centre", "combo ×3   timed round 30 s"],
-  },
-  {
-    id: "leetcode", cat: "practice", year: "ongoing", name: "LeetCode",
-    line: "Around 40 solved problems, synced to GitHub.",
-    stack: ["Python"],
-    detail: "Mostly arrays, linked lists and strings, plus a few hard ones (median of two sorted arrays, merge k sorted lists).",
-    links: [["code", `${GH}/LeetCode`]],
-    peek: ["4.  Median of Two Sorted Arrays   hard", "23. Merge k Sorted Lists         hard", "2.  Add Two Numbers              medium"],
-  },
 ];
 
-export const log = [
-  ["21 Nov", "PyPI said 400 Bad Request.",
-    "What it meant: a project called bharat-pii already exists, and PyPI ignores hyphens when it compares names. I had only checked the exact spelling. Renamed the project and now check every variant first."],
-  ["21 Nov", "My PII scanner ran at 0.37 MB/s.",
-    "The profiler found an O(n²) overlap check and sixteen regexes that started with a lookbehind, which makes Python try every position. Fixed both: same results, 4.5× faster."],
-  ["21 Nov", "My own code leaked an auth token.",
-    "Securegent's HTTP client followed a 302 to another host and re-sent the Authorization header with it. Redirects aren't followed at all now, and a test proves the token stays put."],
-  ["20 Nov", "The alert rule that never fired.",
-    "My Wazuh rules looked right on paper. Running real Wazuh in Docker showed another rule swallowing the “blocked” events first. Test against the real thing, not against your XML."],
+// Numbers come from each repo (README, results/metrics.json) or from my own runs.
+export const results = [
+  { n: "14/14", what: "prompt-injection attacks blocked by the India-finance policy pack", from: "Securegent" },
+  { n: "~1 ms", what: "to check a tool call against identity, policy and data origin", from: "Securegent" },
+  { n: "4.5×", what: "faster scanning after the profiler found an O(n²) overlap check", from: "aadhaarguard" },
+  { n: "400/400", what: "random inputs where the browser port matches the Python library", from: "aadhaarguard" },
+  { n: "0%", what: "packets dropped across the topology (12/12 pings)", from: "SDN routing" },
+  { n: "0.24 ms", what: "average h1 → h4 round trip on the static path", from: "SDN routing" },
+  { n: "2.5×", what: "sooner an I/O-bound container finished next to a CPU hog, thanks to CFS", from: "Container runtime" },
+  { n: "0.65", what: "C-index with clinical + radiomic features vs 0.62 clinical alone (synthetic cohort)", from: "Pancreatic prognosis" },
 ];
 
 export const tools = [
@@ -217,6 +166,5 @@ export const snaps = [
   { term: ["h1 ─┐", "     s1 ── s2 ── s3 ─┬─ h3", "h2 ─┘               └─ h4", "", "flows reinstalled every 10 s"], note: "SDN routing, drawn in ascii", tilt: -2.5 },
   { img: "assets/shots/securegent-3.webp", note: "the big orange stop button", tilt: 1.5 },
   { img: "assets/shots/pypi-aadhaarguard.webp", note: "package #2", tilt: -3.5 },
-  { term: ["$ pes add main.c", "$ pes commit -m \"phase 3\"", ".pes/objects/ab/cdef…", "$ pes log"], note: "git, but I wrote it", tilt: 2 },
   { img: "assets/shots/github.webp", note: "where all of it lives", tilt: -1 },
 ];
