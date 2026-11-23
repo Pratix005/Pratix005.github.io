@@ -417,7 +417,7 @@ function Marquee({ words, tilt = -1.5, flip = false, className = "" }) {
     base.set(base.get() + move);
   });
 
-  const row = words.map(w => <span key={w}>{w}<i aria-hidden="true" className="sep" /></span>);
+  const row = words.map(w => <span key={w}>{w}<i aria-hidden="true">✺</i></span>);
   return (
     <div className={`marquee ${className}`} style={{ "--tilt": `${tilt}deg` }} aria-hidden="true">
       <motion.div className="marquee-track" style={{ x }}>{row}{row}{row}{row}</motion.div>
@@ -447,6 +447,9 @@ function Desk() {
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
   const raw = useTransform(scrollYProgress, [0, 1], [0, -dist]);
   const x = useSpring(raw, { stiffness: 140, damping: 30, mass: 0.35 });
+  const bar = useSpring(scrollYProgress, { stiffness: 160, damping: 30 });
+  const [shown, setShown] = useState(1);
+  useMotionValueEvent(scrollYProgress, "change", v => setShown(Math.min(snaps.length, 1 + Math.floor(v * snaps.length))));
 
   useEffect(() => {
     const measure = () => { if (track.current) setDist(Math.max(0, track.current.scrollWidth - window.innerWidth)); };
@@ -468,6 +471,11 @@ function Desk() {
           {snaps.map((s, i) => <DeskCard key={s.note} s={s} i={i} progress={scrollYProgress} />)}
           <p className="desk-end">that's the desk.<br />now the details ↓</p>
         </motion.div>
+        <div className="desk-foot" aria-hidden="true">
+          <span className="desk-count">{String(shown).padStart(2, "0")} <i>/ {String(snaps.length).padStart(2, "0")}</i></span>
+          <span className="desk-bar"><motion.span style={{ scaleX: bar }} /></span>
+          <span className="desk-hint">keep scrolling, the desk slides →</span>
+        </div>
       </div>
     </section>
   );
