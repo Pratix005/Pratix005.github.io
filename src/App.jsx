@@ -417,7 +417,7 @@ function Marquee({ words, tilt = -1.5, flip = false, className = "" }) {
     base.set(base.get() + move);
   });
 
-  const row = words.map(w => <span key={w}>{w}<i aria-hidden="true">✺</i></span>);
+  const row = words.map(w => <span key={w}>{w}<i aria-hidden="true" className="sep" /></span>);
   return (
     <div className={`marquee ${className}`} style={{ "--tilt": `${tilt}deg` }} aria-hidden="true">
       <motion.div className="marquee-track" style={{ x }}>{row}{row}{row}{row}</motion.div>
@@ -867,7 +867,7 @@ function Contact() {
 
 const RIBBON = [
   { img: "assets/shots/securegent-2.webp" }, { t: "p.", bg: "#ff5b14" },
-  { img: "assets/shots/aadhaarguard-1.webp" }, { t: "✺", bg: "#fbf3ea", ink: "#ff5b14" },
+  { img: "assets/shots/aadhaarguard-1.webp" }, { t: "py", bg: "#fbf3ea", ink: "#ff5b14" },
   { img: "assets/shots/pypi-securegent.webp" }, { t: "C", bg: "#ffd9c4", ink: "#1d1a17" },
   { img: "assets/shots/securegent-3.webp" }, { t: "AI", bg: "#ff5b14" },
   { img: "assets/shots/pypi-aadhaarguard.webp" }, { t: "14", bg: "#fbf3ea", ink: "#1d1a17" },

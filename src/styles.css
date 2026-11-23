@@ -317,14 +317,14 @@ pre { margin: 0; }
   box-shadow: 0 14px 30px -18px rgb(255 91 20 / .7);
 }
 .marquee.alt { background: var(--paper); color: var(--ink); border-block: 2px solid var(--ink); box-shadow: none; }
-.marquee.alt i { color: var(--signal); }
 .marquee-track { display: flex; width: max-content; white-space: nowrap; }
 .marquee-track span {
   display: inline-flex; align-items: center;
   font-family: var(--serif); font-variation-settings: var(--soft); font-style: italic; font-weight: 400;
   font-size: clamp(1.4rem, 1rem + 1.6vw, 2.3rem); line-height: 1.2;
 }
-.marquee-track i { font-style: normal; margin: 0 1.1rem; font-size: .7em; }
+.marquee-track .sep { display: inline-block; width: .32em; height: .32em; border-radius: 50%; background: currentColor; margin: 0 1em; }
+.marquee.alt .sep { background: var(--signal); }
 
 /* ── the desk (pinned sideways scroll) ──────────────────── */
 .desk { position: relative; margin-top: clamp(3rem, 8vh, 5rem); }
