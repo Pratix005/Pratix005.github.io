@@ -168,3 +168,31 @@ export const snaps = [
   { img: "assets/shots/pypi-aadhaarguard.webp", note: "package #2", tilt: -3.5 },
   { img: "assets/shots/github.webp", note: "where all of it lives", tilt: -1 },
 ];
+
+// Covers for the 3D ring and the areas panel. Drawn in code, one per project.
+export const covers = [
+  { name: "Securegent", kicker: "firewall · 0.3.0", theme: "ink", art: "pulse" },
+  { name: "aadhaarguard", kicker: "indian pii · 0.2.1", theme: "cream", art: "mask" },
+  { name: "SIGN_AI", kicker: "ISL / ASL", theme: "orange", art: "hand" },
+  { name: "Containers", kicker: "C · kernel module", theme: "ink", art: "boxes" },
+  { name: "MedShield", kicker: "drug–gene risk", theme: "peach", art: "pills" },
+  { name: "Traffic AI", kicker: "multi-agent", theme: "orange", art: "lights" },
+  { name: "Prognosis", kicker: "survival analysis", theme: "cream", art: "km" },
+  { name: "SDN", kicker: "OpenFlow 1.3", theme: "ink", art: "topo" },
+  { name: "pip install", kicker: "both on PyPI", theme: "orange", art: "pip" },
+  { name: "break it.", kicker: "build it, then", theme: "peach", art: "scribble" },
+  { name: "14/14", kicker: "attacks blocked", theme: "ink", art: "shield" },
+  { name: "Bengaluru", kicker: "BLR · IST", theme: "cream", art: "sun" },
+];
+
+export const areas = [
+  { id: "security", name: "Security tooling", cover: "Securegent", caption: "securegent + aadhaarguard",
+    text: "Guardrails for AI agents and for Indian personal data: policies, audit logs, redaction, and a red-team suite that attacks my own code.",
+    stats: [["14/14", "attacks blocked"], ["2", "packages on PyPI"]] },
+  { id: "ml", name: "Machine learning", cover: "SIGN_AI", caption: "SIGN_AI · MedShield · Traffic AI · prognosis",
+    text: "Models for health and accessibility: sign language from hand landmarks, drug–gene risk, and survival analysis.",
+    stats: [["4", "ML projects"], ["0.65", "C-index (synthetic data)"]] },
+  { id: "systems", name: "Systems in C", cover: "Containers", caption: "container runtime + SDN controller",
+    text: "Containers built from namespaces with a kernel module that enforces memory limits, and an SDN controller that keeps its routes.",
+    stats: [["2.5×", "sooner for I/O work under CFS"], ["0%", "packets dropped"]] },
+];

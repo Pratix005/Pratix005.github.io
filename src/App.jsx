@@ -4,12 +4,19 @@ import {
   useAnimationFrame, useInView, useMotionValue, useMotionValueEvent, useReducedMotion,
   useScroll, useSpring, useTransform, useVelocity,
 } from "motion/react";
-import { categories, featured, projects, results, snaps, tools } from "./data.js";
+import { areas, categories, covers, featured, projects, results, snaps, tools } from "./data.js";
 import { redact, scan } from "./scan.js";
 
 const EASE = [0.2, 0.7, 0.1, 1];
 const CURTAIN = [0.76, 0, 0.24, 1];
-const NAV = [["work", "work"], ["results", "results"], ["projects", "projects"], ["playground", "try it"], ["about", "about"], ["contact", "contact"]];
+const NAV = [["work", "work"], ["results", "results"], ["projects", "projects"], ["playground", "try it"], ["about", "about"]];
+const EMAIL = "pratikpatil1008p@gmail.com";
+const LINKS = [
+  ["LinkedIn", "https://www.linkedin.com/in/pratikpatil2105/"],
+  ["GitHub", "https://github.com/Pratix005"],
+  ["PyPI", "https://pypi.org/project/securegent/"],
+  ["Email", `mailto:${EMAIL}`],
+];
 
 /* ── small helpers ─────────────────────────────────────────── */
 
@@ -57,6 +64,35 @@ function useFinePointer() {
 
 const wrap = (min, max, v) => { const r = max - min; return ((((v - min) % r) + r) % r) + min; };
 
+/* numbers that roll into place like an odometer */
+function Roll({ value, go = true, delay = 0 }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "0px 0px -10% 0px" });
+  const reduce = useReducedMotion();
+  const run = inView && go;
+  let d = 0;
+  return (
+    <span ref={ref} className="roll" aria-label={value}>
+      {[...value].map((ch, i) => {
+        if (!/\d/.test(ch)) return <span key={i} aria-hidden="true">{ch === " " ? " " : ch}</span>;
+        const at = `-${((10 + +ch) / 20) * 100}%`;
+        const wait = delay + d++ * 0.09;
+        return (
+          <span className="roll-col" key={i} aria-hidden="true">
+            <motion.span className="roll-strip"
+              initial={{ y: reduce ? at : "0%" }}
+              animate={run ? { y: at } : {}}
+              transition={{ duration: 1.6, ease: [0.3, 0, 0.1, 1], delay: wait }}>
+              {"01234567890123456789".split("").map((n, k) => <span key={k}>{n}</span>)}
+            </motion.span>
+            <span className="roll-ghost">{ch}</span>
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
 /* a taped-down photo; `term` renders real terminal lines instead of an image */
 function Polaroid({ img, term, note, className = "" }) {
   return (
@@ -67,6 +103,42 @@ function Polaroid({ img, term, note, className = "" }) {
       </div>
       <figcaption>{note}</figcaption>
     </figure>
+  );
+}
+
+/* ── project covers (drawn, not photographed) ──────────────── */
+
+function CoverArt({ kind }) {
+  switch (kind) {
+    case "pulse": return <svg viewBox="0 0 100 50"><path className="o" d="M0 30 H28 L34 14 L42 44 L50 6 L58 38 L63 30 H100" /></svg>;
+    case "mask": return <p className="cv-mono">Aadhaar<br /><mark>XXXX XXXX</mark> 8697<br />PAN <mark>XXXXX</mark>234F</p>;
+    case "hand": return (
+      <svg viewBox="0 0 100 70">
+        <circle className="w" cx="50" cy="58" r="9" />
+        {[[22, 30], [34, 12], [50, 6], [66, 12], [80, 34]].map(([x, y], i) => (
+          <g key={i}><path className="w" d={`M50 58 L${(50 + x) / 2} ${(58 + y) / 2 + 4} L${x} ${y}`} /><circle className="wf" cx={x} cy={y} r="3.2" /><circle className="wf" cx={(50 + x) / 2} cy={(58 + y) / 2 + 4} r="2.4" /></g>
+        ))}
+      </svg>);
+    case "boxes": return <svg viewBox="0 0 100 60"><rect className="o" x="8" y="6" width="84" height="48" rx="4" /><rect className="w" x="20" y="16" width="34" height="28" rx="3" /><rect className="w" x="60" y="16" width="22" height="28" rx="3" /><path className="o" d="M64 26 l14 12 M78 26 l-14 12" /></svg>;
+    case "pills": return <p className="cv-pills"><span>Safe</span><span>Risk</span><span className="hot">High-Risk</span></p>;
+    case "lights": return <svg viewBox="0 0 100 70"><rect className="w" x="36" y="2" width="28" height="66" rx="14" /><circle className="wf" cx="50" cy="16" r="7" /><circle className="wf dim" cx="50" cy="35" r="7" /><circle className="wf dim" cx="50" cy="54" r="7" /></svg>;
+    case "km": return <svg viewBox="0 0 100 60"><path className="i" d="M4 4 V56 H96" /><path className="o" d="M6 8 H22 V16 H38 V24 H50 V36 H70 V42 H94" /><path className="i dash" d="M6 8 H16 V22 H30 V36 H44 V48 H94" /></svg>;
+    case "topo": return <svg viewBox="0 0 100 60"><path className="w" d="M14 14 L32 30 L14 46 M32 30 H50 H68 L86 14 M68 30 L86 46" /><circle className="of" cx="32" cy="30" r="6" /><circle className="of" cx="50" cy="30" r="6" /><circle className="of" cx="68" cy="30" r="6" />{[[14, 14], [14, 46], [86, 14], [86, 46]].map(([x, y]) => <circle key={x + y} className="wf" cx={x} cy={y} r="4" />)}</svg>;
+    case "pip": return <p className="cv-mono">$ pip install<br />&nbsp;&nbsp;securegent<br />$ pip install<br />&nbsp;&nbsp;aadhaarguard</p>;
+    case "scribble": return <svg viewBox="0 0 100 50"><path className="o thick" d="M6 30 C 20 10, 30 44, 46 24 S 70 8, 78 28 S 90 40, 96 18" /></svg>;
+    case "shield": return <svg viewBox="0 0 100 60"><path className="o" d="M50 4 L74 12 V30 C74 44 62 52 50 56 C38 52 26 44 26 30 V12 Z" /><path className="w" d="M40 30 l7 7 l14 -14" /></svg>;
+    case "sun": return <svg viewBox="0 0 100 60"><circle className="of" cx="50" cy="40" r="18" /><path className="i" d="M4 44 H96 M10 52 H90" /></svg>;
+    default: return null;
+  }
+}
+
+function Cover({ c }) {
+  return (
+    <div className={`cover cv-${c.theme}`}>
+      <span className="cv-kicker">{c.kicker}</span>
+      <div className="cv-art"><CoverArt kind={c.art} /></div>
+      <strong className="cv-name">{c.name}</strong>
+    </div>
   );
 }
 
@@ -167,7 +239,7 @@ function Header() {
       <motion.div className="progress" style={{ scaleX: bar }} aria-hidden="true" />
       <header className={`top${scrolled ? " scrolled" : ""}`}>
         <a className="mark" href="#top" aria-label="Pratik Patil, back to top">pratik<span>.</span></a>
-        <nav aria-label="Sections">
+        <nav aria-label="Sections" className="pillnav">
           {NAV.map(([id, label]) => (
             <a key={id} href={`#${id}`} className={active === id ? "on" : ""}>
               {active === id && <motion.span layoutId="nav-pill" className="nav-pill" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
@@ -175,125 +247,159 @@ function Header() {
             </a>
           ))}
         </nav>
-        <span className="clock" title="My local time in Bengaluru"><i aria-hidden="true" />BLR <time>{time}</time></span>
+        <div className="top-right">
+          <span className="clock" title="My local time in Bengaluru"><i aria-hidden="true" />BLR <time>{time}</time></span>
+          <a className="cta" href="#contact">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14v10H3z M3 5l7 6 7-6" /></svg>
+            Get in touch
+          </a>
+        </div>
       </header>
     </>
   );
 }
 
-/* ── hero ──────────────────────────────────────────────────── */
+/* ── hero: headline, a 3D ring you can spin, stat cards ────── */
 
 const HEADLINE = ["I build AI tools,", "then spend weeks", "trying to "];
-const HERO_PICS = [
-  { img: "assets/shots/securegent-2.webp", note: "securegent saying no", tilt: -6, speed: -260, cls: "hp-1" },
-  { img: "assets/shots/aadhaarguard-1.webp", note: "aadhaarguard at work", tilt: 5, speed: -140, cls: "hp-2" },
-  { img: "assets/shots/pypi-securegent.webp", note: "on pypi!!", tilt: -2, speed: -360, cls: "hp-3" },
-];
+const STATS = [[String(projects.length), "projects"], ["2", "packages on PyPI"], ["14/14", "attacks blocked"], ["1", "kernel module"]];
 
-function HeroPic({ pic, i, progress, ready }) {
+function Ring({ ready }) {
   const reduce = useReducedMotion();
-  const y = useTransform(progress, [0, 1], [0, reduce ? 0 : pic.speed]);
-  const rotate = useTransform(progress, [0, 1], [pic.tilt, pic.tilt + (reduce ? 0 : (i % 2 ? 8 : -8))]);
+  const stage = useRef(null);
+  const [cw, setCw] = useState(200);
+  const N = covers.length, step = 360 / N;
+  const r = Math.round(cw / 2 / Math.tan(Math.PI / N) + cw * 0.12);
+
+  useEffect(() => {
+    const measure = () => setCw(Math.round(Math.min(210, Math.max(112, stage.current.offsetWidth * 0.15))));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(stage.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const rot = useMotionValue(0);
+  const spin = useRef(-0.012);              // degrees per ms while cruising
+  const drag = useRef(null);
+  useAnimationFrame((_, d) => {
+    if (drag.current || reduce) return;
+    spin.current += (-0.012 - spin.current) * Math.min(1, d / 700);
+    rot.set(rot.get() + spin.current * d);
+  });
+  const down = e => { drag.current = { x: e.clientX, t: performance.now(), v: 0 }; e.currentTarget.setPointerCapture(e.pointerId); };
+  const move = e => {
+    const g = drag.current; if (!g) return;
+    const now = performance.now(), dx = (e.clientX - g.x) * 0.32;
+    rot.set(rot.get() + dx);
+    g.v = dx / Math.max(1, now - g.t); g.x = e.clientX; g.t = now;
+  };
+  const up = () => { if (drag.current) { spin.current = Math.max(-1.2, Math.min(1.2, drag.current.v)); drag.current = null; } };
+
+  const { scrollYProgress } = useScroll({ target: stage, offset: ["start end", "end start"] });
+  const tilt = useTransform(scrollYProgress, [0, 1], reduce ? [-9, -9] : [-3, -14]);
+  const h = Math.round(cw * 4 / 3);
+  const room = Math.round(2 * r * Math.sin(15 * Math.PI / 180)) + 90;
+
   return (
-    <motion.div className={`hero-pic ${pic.cls}`} style={{ y, rotate }}>
-      <motion.div
-        initial={{ opacity: 0, y: 80, scale: 0.85, rotate: i % 2 ? 14 : -14 }}
-        animate={ready ? { opacity: 1, y: 0, scale: 1, rotate: 0 } : {}}
-        transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.55 + i * 0.14 }}
-        whileHover={{ scale: 1.05, rotate: i % 2 ? -3 : 3, zIndex: 5 }}>
-        <Polaroid img={pic.img} note={pic.note} />
+    <motion.div className="ring-stage" ref={stage} style={{ height: h + room }}
+      initial={{ opacity: 0, scale: 0.8, y: 60 }} animate={ready ? { opacity: 1, scale: 1, y: 0 } : {}}
+      transition={{ duration: 1.2, ease: EASE, delay: 0.35 }}
+      onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
+      aria-label="A ring of project covers. Drag to spin." role="img">
+      <motion.div className="ring" style={{ rotateX: tilt, rotateY: rot, width: cw, height: h }}>
+        {covers.map((c, i) => (
+          <div className="ring-card" key={c.name} style={{ transform: `rotateY(${i * step}deg) translateZ(${r}px)` }}>
+            <div className="ring-face"><Cover c={c} /></div>
+            <div className="ring-face back"><Cover c={c} /></div>
+          </div>
+        ))}
       </motion.div>
+      <p className="ring-hint" aria-hidden="true">• drag to spin •</p>
     </motion.div>
   );
 }
 
 function Hero({ ready }) {
-  const reduce = useReducedMotion();
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const drift = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -60]);
   const go = ready ? "show" : "hide";
-
-  const counts = [
-    [projects.length, "projects below"],
-    [2, "packages on PyPI"],
-    ["14/14", "red-team attacks blocked"],
-    [1, "Linux kernel module"],
-  ];
-
   return (
-    <section className="hero" ref={ref}>
-      <motion.div className="hero-copy" style={{ y: drift }}>
-        <motion.p className="hello" initial={{ opacity: 0, rotate: -4, y: 10 }} animate={ready ? { opacity: 1, rotate: -4, y: 0 } : {}} transition={{ duration: 0.6, delay: 0.1 }}>
-          hi, I'm Pratik
-          <svg className="wave" viewBox="0 0 40 40" aria-hidden="true">
-            <motion.path d="M8 20 C 12 10, 18 30, 22 18 S 30 12, 34 22" initial={{ pathLength: 0 }} animate={ready ? { pathLength: 1 } : {}} transition={{ duration: 0.6, delay: 0.5 }} />
-          </svg>
-        </motion.p>
-        <h1 className="headline">
-          {HEADLINE.map((line, i) => (
-            <span className="line" key={i}>
-              <motion.span
-                initial="hide" animate={go}
-                variants={{ hide: { y: "110%", rotate: 3 }, show: { y: 0, rotate: 0 } }}
-                transition={{ duration: 1, ease: EASE, delay: 0.15 + i * 0.1 }}
-              >
-                {line}
-                {i === 2 && (
-                  <em className="scribble">break them.
-                    <svg viewBox="0 0 300 24" preserveAspectRatio="none" aria-hidden="true">
-                      <motion.path
-                        d="M3 15 C 40 6, 80 20, 120 12 S 200 4, 240 13 S 285 18, 297 9"
-                        initial={{ pathLength: 0 }} animate={ready ? { pathLength: 1 } : {}}
-                        transition={{ duration: 0.9, ease: "easeInOut", delay: 1.1 }}
-                      />
-                    </svg>
-                  </em>
-                )}
-              </motion.span>
-            </span>
-          ))}
-        </h1>
-        <motion.p className="margin-note" initial={{ opacity: 0 }} animate={ready ? { opacity: 1 } : {}} transition={{ delay: 1.6, duration: 0.6 }}>
-          <svg viewBox="0 0 60 40" aria-hidden="true"><path d="M56 6 C 40 4, 22 10, 12 28 M4 20 L 12 30 L 22 22" /></svg>
-          (mostly my own tools)
-        </motion.p>
-
-        <div className="hero-foot">
-          <motion.p className="intro" initial={{ opacity: 0, y: 16 }} animate={ready ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7, ease: EASE, delay: 0.6 }}>
+    <section className="hero">
+      <div className="hero-top">
+        <div>
+          <motion.p className="hello" initial={{ opacity: 0, rotate: -4, y: 10 }} animate={ready ? { opacity: 1, rotate: -4, y: 0 } : {}} transition={{ duration: 0.6, delay: 0.1 }}>
+            hi, I'm Pratik
+            <svg className="wave" viewBox="0 0 40 40" aria-hidden="true">
+              <motion.path d="M8 20 C 12 10, 18 30, 22 18 S 30 12, 34 22" initial={{ pathLength: 0 }} animate={ready ? { pathLength: 1 } : {}} transition={{ duration: 0.6, delay: 0.5 }} />
+            </svg>
+          </motion.p>
+          <h1 className="headline">
+            {HEADLINE.map((line, i) => (
+              <span className="line" key={i}>
+                <motion.span
+                  initial="hide" animate={go}
+                  variants={{ hide: { y: "110%", rotate: 3 }, show: { y: 0, rotate: 0 } }}
+                  transition={{ duration: 1, ease: EASE, delay: 0.15 + i * 0.1 }}
+                >
+                  {line}
+                  {i === 2 && (
+                    <em className="scribble">break them.
+                      <svg viewBox="0 0 300 24" preserveAspectRatio="none" aria-hidden="true">
+                        <motion.path
+                          d="M3 15 C 40 6, 80 20, 120 12 S 200 4, 240 13 S 285 18, 297 9"
+                          initial={{ pathLength: 0 }} animate={ready ? { pathLength: 1 } : {}}
+                          transition={{ duration: 0.9, ease: "easeInOut", delay: 1.1 }}
+                        />
+                      </svg>
+                    </em>
+                  )}
+                </motion.span>
+              </span>
+            ))}
+          </h1>
+        </div>
+        <motion.div className="hero-side" initial={{ opacity: 0, y: 16 }} animate={ready ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7, ease: EASE, delay: 0.6 }}>
+          <p className="intro">
             Computer science student at PES University, Bengaluru. I like problems where a
             mistake costs something real, so I build carefully, publish the code, and then
-            write the tests that try to prove me wrong. Security, machine learning and
-            low-level systems, mostly.
-          </motion.p>
-          <motion.dl className="counts" initial="h" animate={ready ? "s" : "h"}
-            variants={{ s: { transition: { staggerChildren: 0.08, delayChildren: 0.8 } } }}>
-            {counts.map(([n, what]) => (
-              <motion.div key={what} variants={{ h: { opacity: 0, y: 12 }, s: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } } }}>
-                <dt>{n}</dt><dd>{what}</dd>
-              </motion.div>
-            ))}
-          </motion.dl>
-        </div>
-      </motion.div>
-
-      <div className="hero-pics" aria-hidden="true">
-        {HERO_PICS.map((pic, i) => <HeroPic key={pic.cls} pic={pic} i={i} progress={scrollYProgress} ready={ready} />)}
+            write the tests that try to prove me wrong.
+          </p>
+          <p className="margin-note">
+            <svg viewBox="0 0 60 40" aria-hidden="true"><path d="M8 4 C 6 18, 14 30, 34 34 M26 26 L 35 34 L 26 40" /></svg>
+            spin the ring, it's my work
+          </p>
+        </motion.div>
       </div>
 
-      <motion.a className="scroll-hint" href="#desk" initial={{ opacity: 0 }} animate={ready ? { opacity: 1 } : {}} transition={{ delay: 1.8, duration: 0.8 }}>
-        <motion.svg viewBox="0 0 60 70" aria-hidden="true" animate={reduce ? {} : { y: [0, 6, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
-          <path d="M8 6 C 30 8, 48 22, 40 44 C 37 52, 32 58, 28 63 M18 56 L 28 64 L 34 52" />
-        </motion.svg>
-        <span>scroll, things move</span>
-      </motion.a>
+      <Ring ready={ready} />
+
+      <ul className="stats">
+        {STATS.map(([n, label], i) => (
+          <motion.li key={label}
+            initial={{ opacity: 0, y: 30 }} animate={ready ? { opacity: 1, y: 0 } : {}}
+            whileHover={{ y: -6, rotate: i % 2 ? 1.5 : -1.5 }}
+            transition={{ duration: 0.6, ease: EASE, delay: ready ? 0.9 + i * 0.1 : 0 }}>
+            <span className="stat-n"><Roll value={n} go={ready} delay={1 + i * 0.1} /></span>
+            <span className="stat-l">{label}</span>
+          </motion.li>
+        ))}
+      </ul>
     </section>
   );
 }
 
+/* ── huge faded words that slide with the scroll ───────────── */
+
+function BigWords({ text, from = "8%", to = "-42%" }) {
+  const ref = useRef(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const x = useTransform(scrollYProgress, [0, 1], reduce ? ["0%", "0%"] : [from, to]);
+  return <div className="bigwords" ref={ref} aria-hidden="true"><motion.p style={{ x }}>{text}</motion.p></div>;
+}
+
 /* ── marquee that speeds up with your scroll ───────────────── */
 
-function Marquee({ words, tilt = -1.5, flip = false }) {
+function Marquee({ words, tilt = -1.5, flip = false, className = "" }) {
   const reduce = useReducedMotion();
   const base = useMotionValue(0);
   const { scrollY } = useScroll();
@@ -313,7 +419,7 @@ function Marquee({ words, tilt = -1.5, flip = false }) {
 
   const row = words.map(w => <span key={w}>{w}<i aria-hidden="true">✺</i></span>);
   return (
-    <div className={`marquee${flip ? " alt" : ""}`} style={{ "--tilt": `${tilt}deg` }} aria-hidden="true">
+    <div className={`marquee ${className}`} style={{ "--tilt": `${tilt}deg` }} aria-hidden="true">
       <motion.div className="marquee-track" style={{ x }}>{row}{row}{row}{row}</motion.div>
     </div>
   );
@@ -362,6 +468,67 @@ function Desk() {
           {snaps.map((s, i) => <DeskCard key={s.note} s={s} i={i} progress={scrollYProgress} />)}
           <p className="desk-end">that's the desk.<br />now the details ↓</p>
         </motion.div>
+      </div>
+    </section>
+  );
+}
+
+/* ── areas: orange panel, pick a kind of work ──────────────── */
+
+function Areas() {
+  const [a, setA] = useState(0);
+  const touched = useRef(false);
+  const ref = useRef(null);
+  const inView = useInView(ref, { margin: "-20% 0px -20% 0px" });
+  const reduce = useReducedMotion();
+  const area = areas[a];
+  const cover = covers.find(c => c.name === area.cover);
+
+  useEffect(() => {
+    if (!inView || reduce || touched.current) return;
+    const id = setInterval(() => setA(v => (v + 1) % areas.length), 4200);
+    return () => clearInterval(id);
+  }, [inView, reduce]);
+
+  const pick = i => { touched.current = true; setA(i); };
+
+  return (
+    <section className="areas" ref={ref} aria-label="What I build">
+      <div className="areas-in">
+        <div className="areas-show">
+          <AnimatePresence mode="wait">
+            <motion.div key={area.id} className="areas-cover"
+              initial={{ opacity: 0, rotate: -12, y: 40, scale: 0.85 }}
+              animate={{ opacity: 1, rotate: -5, y: 0, scale: 1 }}
+              exit={{ opacity: 0, rotate: 8, y: -30, scale: 0.9 }}
+              transition={{ duration: 0.5, ease: EASE }}>
+              <Cover c={cover} />
+            </motion.div>
+          </AnimatePresence>
+          <span className="areas-caption">{area.caption}</span>
+        </div>
+        <div className="areas-text">
+          <span className="pill-dark">what I build</span>
+          <Reveal as="h2" className="areas-title">Three kinds of problems,<br />one habit: <em>test it hard.</em></Reveal>
+          <div className="areas-list" role="tablist" aria-label="Areas">
+            {areas.map((x, i) => (
+              <button key={x.id} role="tab" type="button" aria-selected={i === a} className={i === a ? "on" : ""}
+                onClick={() => pick(i)} onPointerEnter={() => pick(i)}>
+                {x.name}
+              </button>
+            ))}
+          </div>
+          <AnimatePresence mode="wait">
+            <motion.div key={area.id} className="areas-detail" role="tabpanel"
+              initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: EASE }}>
+              <p>{area.text}</p>
+              <dl>
+                {area.stats.map(([n, l]) => <div key={l}><dt>{n}</dt><dd>{l}</dd></div>)}
+              </dl>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </section>
   );
@@ -419,24 +586,7 @@ function Featured() {
   );
 }
 
-/* ── results: numbers that count up when they arrive ─────── */
-
-function Count({ value }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "0px 0px -15% 0px" });
-  const reduce = useReducedMotion();
-  const m = value.match(/^([^\d]*)(\d+(?:\.\d+)?)(.*)$/);
-  const [pre, num, post] = m ? [m[1], m[2], m[3]] : ["", null, value];
-  const dec = num && num.includes(".") ? num.split(".")[1].length : 0;
-  const [shown, setShown] = useState(num ? (0).toFixed(dec) : "");
-  useEffect(() => {
-    if (!num || !inView) return;
-    if (reduce) { setShown(num); return; }
-    const run = animate(0, parseFloat(num), { duration: 1.5, ease: EASE, onUpdate: v => setShown(v.toFixed(dec)) });
-    return () => run.stop();
-  }, [inView, num, dec, reduce]);
-  return <span ref={ref} aria-label={value}>{pre}{shown}{post}</span>;
-}
+/* ── results ───────────────────────────────────────────────── */
 
 function Results() {
   return (
@@ -454,7 +604,7 @@ function Results() {
             whileHover={{ y: -8, rotate: 0, transition: { type: "spring", stiffness: 300, damping: 16 } }}
             viewport={{ once: true, margin: "0px 0px -10% 0px" }}
             transition={{ duration: 0.65, ease: EASE, delay: (i % 4) * 0.08 }}>
-            <span className="res-n"><Count value={r.n} /></span>
+            <span className="res-n"><Roll value={r.n} delay={(i % 4) * 0.08} /></span>
             <p>{r.what}</p>
             <span className="res-from">{r.from}</span>
           </motion.li>
@@ -649,10 +799,10 @@ function About() {
         <Reveal className="about-text">
           <p className="big">I like problems where being wrong is <em>expensive</em>: health data, money, personal IDs, AI that can take actions.</p>
           <p>
-            I'm a B.Tech CSE student at PES University. I started out building ML projects for healthcare and accessibility, and drifted into
-            security once I noticed most of those systems would happily leak what they were meant
-            to protect. These days I write tools for that, publish them, and then write the test
-            that tries to break them.
+            I'm a B.Tech CSE student at PES University. I started out building ML projects for
+            healthcare and accessibility, and drifted into security once I noticed most of those
+            systems would happily leak what they were meant to protect. Now I write tools for
+            that, publish them, and then write the test that tries to break them.
           </p>
           <p>Coursework counts too: the container runtime came out of operating systems, the SDN controller out of computer networks.</p>
         </Reveal>
@@ -665,8 +815,6 @@ function About() {
 }
 
 /* ── contact ───────────────────────────────────────────────── */
-
-const EMAIL = "pratikpatil1008p@gmail.com";
 
 function Magnetic({ children, className, ...rest }) {
   const ref = useRef(null);
@@ -711,11 +859,63 @@ function Contact() {
           say hi, I reply
         </p>
       </Reveal>
-      <Reveal as="ul" className="elsewhere" delay={0.15}>
-        <li><a href="https://www.linkedin.com/in/pratikpatil2105/" target="_blank" rel="noreferrer">LinkedIn &#8599;</a></li>
-        <li><a href="https://github.com/Pratix005" target="_blank" rel="noreferrer">GitHub &#8599;</a></li>
-      </Reveal>
     </section>
+  );
+}
+
+/* ── footer: link row, then a dark band with a ribbon ──────── */
+
+const RIBBON = [
+  { img: "assets/shots/securegent-2.webp" }, { t: "p.", bg: "#ff5b14" },
+  { img: "assets/shots/aadhaarguard-1.webp" }, { t: "✺", bg: "#fbf3ea", ink: "#ff5b14" },
+  { img: "assets/shots/pypi-securegent.webp" }, { t: "C", bg: "#ffd9c4", ink: "#1d1a17" },
+  { img: "assets/shots/securegent-3.webp" }, { t: "AI", bg: "#ff5b14" },
+  { img: "assets/shots/pypi-aadhaarguard.webp" }, { t: "14", bg: "#fbf3ea", ink: "#1d1a17" },
+];
+const RIB_PATH = "M -120 200 C 140 70, 360 270, 620 170 S 1000 40, 1230 170 S 1480 230, 1580 110";
+
+function Footer() {
+  const dur = 34;
+  return (
+    <>
+      <ul className="socials">
+        {LINKS.map(([name, href]) => (
+          <li key={name}>
+            <a href={href} {...(href.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}>
+              {name} <span aria-hidden="true">&#8599;</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <footer className="foot-dark">
+        <svg className="ribbon" viewBox="0 0 1440 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs><clipPath id="rib-clip"><rect x="-31" y="-31" width="62" height="62" rx="7" /></clipPath></defs>
+          <path id="rib" d={RIB_PATH} fill="none" stroke="#ff5b14" strokeWidth="58" strokeLinecap="round" />
+          {RIBBON.map((c, i) => (
+            <g key={i}>
+              <g transform="rotate(-8)">
+                <rect x="-35" y="-35" width="70" height="70" rx="9" fill={c.img ? "#fff" : c.bg} stroke="#1d1a17" strokeWidth="2" />
+                {c.img
+                  ? <image href={c.img} x="-31" y="-31" width="62" height="62" preserveAspectRatio="xMinYMin slice" clipPath="url(#rib-clip)" />
+                  : <text x="0" y="11" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="30" fill={c.ink || "#fff"}>{c.t}</text>}
+              </g>
+              <animateMotion dur={`${dur}s`} repeatCount="indefinite" begin={`-${(i * dur) / RIBBON.length}s`}>
+                <mpath href="#rib" />
+              </animateMotion>
+            </g>
+          ))}
+        </svg>
+        <p className="foot-big"><span>&copy;</span> 2026 Pratik Patil</p>
+        <div className="foot-row">
+          <p>&copy; 2026 Pratik Patil &middot; Bengaluru</p>
+          <nav aria-label="Footer">
+            {NAV.map(([id, label]) => <a key={id} href={`#${id}`}>{label}</a>)}
+            <a href="#contact">contact</a>
+          </nav>
+          <a href="#top">back to top &uarr;</a>
+        </div>
+      </footer>
+    </>
   );
 }
 
@@ -731,20 +931,21 @@ export default function App() {
       <Header />
       <main id="top">
         <Hero ready={ready} />
-        <Marquee words={["security for AI agents", "Indian PII", "machine learning", "systems in C", "web apps", "breaking my own code"]} />
+        <BigWords text="security · machine learning · systems in C · " />
         <Desk />
+        <Areas />
         <Featured />
         <Results />
+        <div className="cross" aria-hidden="true">
+          <Marquee className="alt" words={["write the test first", "then break it", "measure it", "ship it"]} tilt={3} flip />
+          <Marquee words={["security for AI agents", "Indian PII", "machine learning", "systems in C", "open source"]} tilt={-2.5} />
+        </div>
         <Projects />
-        <Marquee words={["test against the real thing", "ship it", "then break it", "write it down"]} tilt={1.2} flip />
         <Playground />
         <About />
         <Contact />
       </main>
-      <footer className="foot">
-        <p>&copy; 2026 Pratik Patil &middot; Bengaluru</p>
-        <a href="#top">back to top &uarr;</a>
-      </footer>
+      <Footer />
     </MotionConfig>
   );
 }
