@@ -749,7 +749,7 @@ function Playground() {
   let pos = 0;
   hits.forEach((f, i) => {
     parts.push(text.slice(pos, f.start));
-    parts.push(<motion.mark key={`${f.start}-${style}`} initial={{ backgroundColor: "#ff5b14" }} animate={{ backgroundColor: "#ffe6d6" }} transition={{ duration: 0.6, delay: i * 0.04 }}>{redact(f, style)}</motion.mark>);
+    parts.push(<mark key={`${f.start}-${style}`} className="flash" style={{ animationDelay: `${i * 0.04}s` }}>{redact(f, style)}</mark>);
     pos = f.end;
   });
   parts.push(text.slice(pos, 20000));
@@ -866,10 +866,10 @@ function Contact() {
 /* ── footer: link row, then a dark band with a ribbon ──────── */
 
 const RIBBON = [
-  { img: "assets/shots/securegent-2.webp" }, { t: "p.", bg: "#ff5b14" },
-  { img: "assets/shots/aadhaarguard-1.webp" }, { t: "py", bg: "#fbf3ea", ink: "#ff5b14" },
-  { img: "assets/shots/pypi-securegent.webp" }, { t: "C", bg: "#ffd9c4", ink: "#1d1a17" },
-  { img: "assets/shots/securegent-3.webp" }, { t: "AI", bg: "#ff5b14" },
+  { img: "assets/shots/securegent-2.webp" }, { t: "p.", bg: "var(--signal)", ink: "var(--on-signal)" },
+  { img: "assets/shots/aadhaarguard-1.webp" }, { t: "py", bg: "#fbf3ea", ink: "var(--signal)" },
+  { img: "assets/shots/pypi-securegent.webp" }, { t: "C", bg: "var(--signal-soft)", ink: "#1d1a17" },
+  { img: "assets/shots/securegent-3.webp" }, { t: "AI", bg: "var(--signal)", ink: "var(--on-signal)" },
   { img: "assets/shots/pypi-aadhaarguard.webp" }, { t: "14", bg: "#fbf3ea", ink: "#1d1a17" },
 ];
 const RIB_PATH = "M -120 200 C 140 70, 360 270, 620 170 S 1000 40, 1230 170 S 1480 230, 1580 110";
@@ -890,14 +890,14 @@ function Footer() {
       <footer className="foot-dark">
         <svg className="ribbon" viewBox="0 0 1440 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
           <defs><clipPath id="rib-clip"><rect x="-31" y="-31" width="62" height="62" rx="7" /></clipPath></defs>
-          <path id="rib" d={RIB_PATH} fill="none" stroke="#ff5b14" strokeWidth="58" strokeLinecap="round" />
+          <path id="rib" d={RIB_PATH} fill="none" style={{ stroke: "var(--signal)" }} strokeWidth="58" strokeLinecap="round" />
           {RIBBON.map((c, i) => (
             <g key={i}>
               <g transform="rotate(-8)">
-                <rect x="-35" y="-35" width="70" height="70" rx="9" fill={c.img ? "#fff" : c.bg} stroke="#1d1a17" strokeWidth="2" />
+                <rect x="-35" y="-35" width="70" height="70" rx="9" style={{ fill: c.img ? "#fff" : c.bg }} stroke="#1d1a17" strokeWidth="2" />
                 {c.img
                   ? <image href={c.img} x="-31" y="-31" width="62" height="62" preserveAspectRatio="xMinYMin slice" clipPath="url(#rib-clip)" />
-                  : <text x="0" y="11" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="30" fill={c.ink || "#fff"}>{c.t}</text>}
+                  : <text x="0" y="11" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="30" style={{ fill: c.ink }}>{c.t}</text>}
               </g>
               <animateMotion dur={`${dur}s`} repeatCount="indefinite" begin={`-${(i * dur) / RIBBON.length}s`}>
                 <mpath href="#rib" />
@@ -919,7 +919,74 @@ function Footer() {
   );
 }
 
+/* ── colour picker: add ?picker to the URL to try colours live ── */
+
+const PRESETS = ["#ff5b14", "#1f5eff", "#e8174f", "#00a06a", "#7a3cff", "#d1149a", "#ffc21a", "#0097a7", "#c8f135", "#111111", "#8a1538", "#5b6b1f"];
+const PICK_KEY = "portfolio-picker";
+
+function mix(a, b, t) {
+  const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const [x, y] = [p(a), p(b)];
+  return "#" + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, "0")).join("");
+}
+const lum = h => { const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255); return 0.299 * r + 0.587 * g + 0.114 * b; };
+
+function Picker() {
+  const [open, setOpen] = useState(true);
+  const [c, setC] = useState(() => {
+    try { return { accent: "#ff5b14", paper: "#ffffff", ink: "#1d1a17", on: "#ffffff", ...JSON.parse(localStorage.getItem(PICK_KEY) || "{}") }; }
+    catch (e) { return { accent: "#ff5b14", paper: "#ffffff", ink: "#1d1a17", on: "#ffffff" }; }
+  });
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const r = document.documentElement.style;
+    r.setProperty("--signal", c.accent);
+    r.setProperty("--on-signal", c.on);
+    r.setProperty("--paper", c.paper);
+    r.setProperty("--ink", c.ink);
+    r.setProperty("--paper-2", mix(c.paper, c.accent, 0.05));
+    r.setProperty("--mid", mix(c.ink, c.paper, 0.3));
+    r.setProperty("--low", mix(c.ink, c.paper, 0.48));
+    r.setProperty("--line", mix(c.paper, c.ink, 0.08));
+    r.setProperty("--dot", mix(c.paper, c.ink, 0.16));
+    r.setProperty("--term", lum(c.paper) < 0.3 ? mix(c.paper, "#ffffff", 0.06) : c.ink);
+    try { localStorage.setItem(PICK_KEY, JSON.stringify(c)); } catch (e) { /* private mode */ }
+  }, [c]);
+
+  const set = (k, v) => setC(o => ({ ...o, [k]: v }));
+  const setAccent = v => setC(o => ({ ...o, accent: v, on: lum(v) > 0.62 ? "#111111" : "#ffffff" }));
+  const random = () => setAccent("#" + [0, 0, 0].map(() => Math.floor(40 + Math.random() * 215).toString(16).padStart(2, "0")).join(""));
+  const reset = () => setC({ accent: "#ff5b14", paper: "#ffffff", ink: "#1d1a17", on: "#ffffff" });
+  const code = `accent ${c.accent} · background ${c.paper} · text ${c.ink} · on-accent ${c.on}`;
+  const copy = async () => { try { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) { /* select manually */ } };
+
+  if (!open) return <button className="picker-open" type="button" onClick={() => setOpen(true)}>colours</button>;
+  return (
+    <div className="picker" role="dialog" aria-label="Colour picker">
+      <h4>try colours <button type="button" onClick={() => setOpen(false)} aria-label="Close">×</button></h4>
+      <label>main colour <input type="color" value={c.accent} onChange={e => setAccent(e.target.value)} /></label>
+      <div className="row">{PRESETS.map(p => <button key={p} type="button" className="sw" style={{ background: p }} aria-label={p} onClick={() => setAccent(p)} />)}</div>
+      <label>background <input type="color" value={c.paper} onChange={e => set("paper", e.target.value)} /></label>
+      <label>text <input type="color" value={c.ink} onChange={e => set("ink", e.target.value)} /></label>
+      <label>text on main colour
+        <span className="seg">
+          <button type="button" aria-pressed={c.on === "#ffffff"} onClick={() => set("on", "#ffffff")}>white</button>
+          <button type="button" aria-pressed={c.on === "#111111"} onClick={() => set("on", "#111111")}>black</button>
+        </span>
+      </label>
+      <div className="btns">
+        <button type="button" onClick={random}>random</button>
+        <button type="button" onClick={reset}>reset</button>
+        <button type="button" onClick={copy}>{copied ? "copied" : "copy"}</button>
+      </div>
+      <code>{code}</code>
+    </div>
+  );
+}
+
 export default function App() {
+  const picker = useMemo(() => new URLSearchParams(location.search).has("picker"), []);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
   const done = useMemo(() => () => { setLoading(false); setTimeout(() => setReady(true), 250); }, []);
@@ -946,6 +1013,7 @@ export default function App() {
         <Contact />
       </main>
       <Footer />
+      {picker && <Picker />}
     </MotionConfig>
   );
 }
